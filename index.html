@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Day Dreamin' | The Atlas</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,500;0,600;1,400&family=Montserrat:wght@200;300;400&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- 核心變數 --- */
+        :root {
+            --bg-base: #FDF5F6; /* 這是原本的粉膚色 */
+            --bg-intro: #FFFFFF; /* 新增：介紹區塊用純白 */
+            --text-main: #4A3B3E;
+            --accent-rose: #BC8F8F;
+            --dropdown-bg: rgba(255, 255, 255, 0.95);
+            --nav-bg: rgba(253, 245, 246, 0.85); /* 導覽列半透明背景 */
+        }
+
+        /* --- 基礎設定 --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; cursor: none; }
+        
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            overflow-x: hidden;
+            width: 100%;
+        }
+
+        h1, h2, h3, .serif-font { font-family: 'Cormorant Garamond', serif; }
+        a { text-decoration: none; color: inherit; }
+
+        /* --- 1. 自訂游標 --- */
+        .cursor-dot, .cursor-circle {
+            position: fixed; top: 0; left: 0; transform: translate(-50%, -50%);
+            border-radius: 50%; pointer-events: none; z-index: 9999;
+        }
+        .cursor-dot { width: 8px; height: 8px; background: var(--text-main); }
+        .cursor-circle {
+            width: 20px; height: 20px; border: 1px solid var(--accent-rose);
+            background: rgba(188, 143, 143, 0.1);
+            transition: width 0.3s, height 0.3s, background 0.3s;
+        }
+        body.hovering .cursor-circle {
+            width: 80px; height: 80px; background: rgba(188, 143, 143, 0.3); border-color: transparent; backdrop-filter: blur(1px);
+        }
+
+       /* --- [修改重點 1] 導覽列：加上背景與邊框 --- */
+       nav {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 1.5rem 4rem; /* 高度稍微縮小一點點，比較精緻 */
+            position: fixed; width: 100%; top: 0; z-index: 100;
+            
+            /* 這裡原本是 mix-blend-mode，現在改成實體背景 */
+            background-color: var(--nav-bg); 
+            backdrop-filter: blur(10px); /* 毛玻璃效果 */
+            border-bottom: 1px solid rgba(74, 59, 62, 0.1); /* 下方細線 */
+            color: var(--text-main); /* 確保文字顏色是深色 */
+            transition: all 0.3s ease;
+        }
+        .logo { font-size: 1.8rem; font-style: italic; font-weight: 500; cursor: pointer; }
+
+        .menu-container { position: relative; display: inline-block; }
+        .menu-trigger { font-size: 0.9rem; letter-spacing: 3px; text-transform: uppercase; cursor: pointer; padding: 10px; }
+
+        .dropdown-menu {
+            position: absolute; top: 100%; right: 0; margin-top: 10px;
+            background: var(--dropdown-bg); backdrop-filter: blur(10px);
+            padding: 1.5rem 2rem; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            opacity: 0; transform: translateY(10px); pointer-events: none;
+            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+            min-width: 150px; text-align: right;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        .menu-container.active .dropdown-menu { opacity: 1; transform: translateY(0); pointer-events: auto; }
+        .dropdown-menu li { list-style: none; margin: 1rem 0; }
+        .dropdown-menu a {
+            font-family: 'Cormorant Garamond', serif; font-size: 1.5rem;
+            color: var(--text-main); position: relative; display: inline-block; transition: color 0.1s;
+        }
+        .dropdown-menu a:hover { color: var(--accent-rose); font-style: italic; }
+
+        /* --- Hero Section --- */
+        .hero { height: 100vh; display: flex; justify-content: center; align-items: center; position: relative; text-align: center;}
+        .hero h1 { font-size: 6vw; line-height: 1; margin-bottom: 2rem; mix-blend-mode: overlay; text-align: center; }
+        .floating-imgs img {
+            position: absolute; width: 250px; height: 350px; object-fit: cover;
+            opacity: 0.8; filter: grayscale(30%); border-radius: 4px;
+        }
+        .img-1 { top: 15%; left: 15%; z-index: 1; animation: float 8s infinite ease-in-out; }
+        .img-2 { bottom: 15%; right: 15%; z-index: 3; animation: float 10s infinite ease-in-out reverse; }
+
+        /* --- [修改重點 2] Intro Section：改變底色與邊界 --- */
+        .intro-wrapper {
+            max-width: 100%; /* 讓背景色可以延伸到全螢幕寬 */
+            background-color: var(--bg-intro); /* 改成白色背景 */
+            border-top: 1px solid rgba(188, 143, 143, 0.2); /* 上邊界線 */
+            border-bottom: 1px solid rgba(188, 143, 143, 0.2); /* 下邊界線 */
+            
+            /* 內部佈局 */
+            display: flex; 
+            justify-content: center;
+            padding: 0; /* 移除 padding，讓內部容器控制 */
+        }
+        
+        .intro-container {
+            max-width: 1200px;
+            padding: 10rem 4rem; /* 實際的內距在這裡 */
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6rem;
+            align-items: center;
+        }
+
+        .intro-text-col { padding-right: 1rem; }
+        .intro-subtitle { font-size: 1rem; letter-spacing: 3px; text-transform: uppercase; color: var(--accent-rose); margin-bottom: 1.5rem; display: block; }
+        .intro-title { font-size: 3rem; line-height: 1.1; margin-bottom: 2rem; color: var(--text-main); font-style: italic; }
+        .intro-desc { font-size: 1.1rem; line-height: 1.8; opacity: 0.8; font-family: 'Montserrat', sans-serif; font-weight: 300; text-align: justify; }
+        
+        .intro-img-col { height: 600px; position: relative; overflow: hidden; border-radius: 4px; }
+        .intro-img-col img { width: 100%; height: 100%; object-fit: cover; transition: transform 1.5s cubic-bezier(0.1, 1, 0.2, 1); filter: grayscale(10%); }
+        .intro-wrapper:hover .intro-img-col img { transform: scale(1.05); filter: grayscale(0%); }
+
+        /* --- [修改重點 3] Gallery Section：圖片短一點 & 錯落感大一點 --- */
+        .gallery-section { padding: 8rem 4rem 12rem 4rem; background: var(--bg-base); }
+        .gallery-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4rem; max-width: 1100px; margin: 0 auto; }
+        
+        .gallery-item { 
+            cursor: pointer; /* 讓鼠標變成手型，提示可點擊 */
+            display: block; 
+            position: relative; 
+        }
+
+        /* 這裡增加錯落感：原本是 6rem，現在改成 12rem，讓一高一低更明顯 */
+        .gallery-item:nth-child(even) { margin-top: 12rem; }
+        
+        /* 圖片高度縮短：設定 aspect-ratio 或固定高度 */
+        .img-wrapper { 
+            overflow: hidden; 
+            height: 640px; /* 這裡設定高度，比原本隨內容撐開會短一點 */
+            width: 100%; 
+        }
+        
+        .gallery-item img { width: 100%; height: 100%; object-fit: cover; transition: transform 1.2s cubic-bezier(0.1, 1, 0.2, 1); }
+        .gallery-item:hover img { transform: scale(1.1); }
+        
+        .caption {
+            font-family: 'Cormorant Garamond'; font-size: 1.5rem; margin-top: 1rem;
+            display: flex; justify-content: space-between; border-top: 1px solid rgba(0,0,0,0.1); padding-top: 0.5rem;
+            align-items: center;
+        }
+
+        /* --- [修改重點 4] 引導點擊 (Call to Action) --- */
+        .explore-hint {
+            font-size: 1rem;
+            font-style: italic;
+            color: var(--accent-rose);
+            opacity: 0;
+            transform: translateX(-10px);
+            transition: all 0.3s ease;
+        }
+        
+        /* 滑鼠移到 gallery-item 上時，顯示 Explore 文字 */
+        .gallery-item:hover .explore-hint {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        /* --- 章節詳細頁 Overlay --- */
+        #chapter-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
+            background: var(--bg-base); z-index: 200;
+            transform: translateY(100%);
+            transition: transform 0.8s cubic-bezier(0.77, 0, 0.175, 1);
+            display: grid; grid-template-columns: 1fr 1fr;
+            overflow: hidden;
+        }
+        #chapter-overlay.active { transform: translateY(0); }
+        .overlay-content {
+            padding: 8rem 4rem; display: flex; flex-direction: column; justify-content: center;
+            opacity: 0; transform: translateY(50px); transition: all 0.6s ease 0.3s;
+        }
+        #chapter-overlay.active .overlay-content { opacity: 1; transform: translateY(0); }
+        .overlay-image { width: 100%; height: 100vh; position: relative; overflow: hidden; }
+        .overlay-image img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.2); transition: transform 1.5s ease; }
+        #chapter-overlay.active .overlay-image img { transform: scale(1); }
+
+        .chapter-num { font-size: 1rem; letter-spacing: 2px; text-transform: uppercase; color: var(--accent-rose); margin-bottom: 1rem; display: block; }
+        .chapter-head { font-size: 4rem; line-height: 1; margin-bottom: 2rem; font-style: italic; }
+        .chapter-body { font-size: 1.1rem; line-height: 1.8; max-width: 500px; margin-bottom: 3rem; opacity: 0.8; }
+        
+        .close-btn {
+            position: absolute; top: 2.5rem; right: 4rem;
+            font-family: 'Cormorant Garamond', serif; font-size: 1.5rem;
+            z-index: 202; mix-blend-mode: difference; color: #fff;
+            cursor: pointer; opacity: 0; transition: opacity 0.5s 0.5s;
+        }
+        #chapter-overlay.active .close-btn { opacity: 1; }
+        .back-link { border-bottom: 1px solid var(--text-main); padding-bottom: 5px; display: inline-block; width: fit-content; cursor: pointer;}
+
+        /* --- Footer & Animations --- */
+        footer { 
+    padding: 8rem; 
+    text-align: center; 
+    font-size: 0.8rem; 
+    letter-spacing: 2px;
+    
+    /* 新增背景色 */
+    background: #ffffff; 
+    
+    /* 建議：將文字顏色稍微調淡，模擬原本 opacity 的效果，但不會影響背景 */
+    color: rgba(74, 59, 62, 0.6); 
+}
+        .reveal-up { opacity: 0; transform: translateY(50px); transition: all 1s ease-out; filter: blur(10px); }
+        .reveal-up.visible { opacity: 1; transform: translateY(0); filter: blur(0); }
+        @keyframes float { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-20px) rotate(2deg); } }
+
+        /* 手機版適配 */
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 3rem; }
+            .img-1, .img-2 { width: 150px; height: 200px; opacity: 0.5; }
+            .gallery-grid { grid-template-columns: 1fr; gap: 2rem; }
+            .gallery-item:nth-child(even) { margin-top: 0; }
+            nav, .overlay-content, .close-btn { padding: 1.5rem; right: 1.5rem; }
+            #chapter-overlay { grid-template-columns: 1fr; overflow-y: auto; display: block; }
+            .overlay-image { height: 40vh; }
+            .chapter-head { font-size: 2.5rem; }
+            .cursor-dot, .cursor-circle { display: none; }
+            * { cursor: auto; }
+            
+            /* Intro 手機版調整 */
+            .intro-container { 
+                grid-template-columns: 1fr; 
+                gap: 3rem;
+                padding: 4rem 2rem;
+            }
+            .intro-img-col { height: 400px; order: -1; }
+            .intro-title { font-size: 2.5rem; }
+            .intro-text-col { padding-right: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="cursor-dot"></div>
+    <div class="cursor-circle"></div>
+
+    <nav>
+      <div class="logo serif-font link-hover" onclick="scrollToTop()">Day Dreamin'</div>
+      
+      <div class="menu-container">
+          <div class="menu-trigger link-hover">Menu ▾</div>
+          <ul class="dropdown-menu">
+              <li><a href="#" class="link-hover" onclick="navAction('home'); return false;">Home</a></li>
+              <li><a href="#" class="link-hover" onclick="navAction('realm'); return false;">Realm</a></li>
+              <li><a href="#" class="link-hover" onclick="navAction('contact'); return false;">Contact</a></li>
+          </ul>
+      </div>
+  </nav>
+
+    <main id="main-content">
+        <section class="hero">
+            <div class="floating-imgs">
+                <img src="https://i.pinimg.com/736x/10/09/4f/10094ffcf53661504f0598caba724b56.jpg" class="img-1" alt="Dream 1">
+                <img src="https://i.pinimg.com/736x/30/03/ca/3003cadb303fc3f72f747abd1d311473.jpg" class="img-2" alt="Dream 2">
+            </div>
+            <div class="hero-text reveal-up">
+                <h1 class="serif-font">The Digital <br>Dream Atlas</h1>
+                <p style="letter-spacing: 2px; text-transform: uppercase; font-size: 0.8rem; margin-top: 2rem;">Scroll to dream</p>
+            </div>
+        </section>
+
+        <section class="intro-wrapper reveal-up">
+            <div class="intro-container">
+                <div class="intro-text-col">
+                    <span class="intro-subtitle">Introduction</span>
+                    <h2 class="intro-title serif-font">The Digital Dream Atlas</h2>
+                    <p class="intro-desc">
+                        Day dreamin’ 帶你踏入《數位夢域 The Digital Dream Atlas》。
+                        這裡，現實的輪廓被重新折射，時間在裂縫中偏移，科技如光線般編織出新的紋理。
+                        <br>Dreamcatcher 將穿梭四個夢的維度——
+                        <br>從 glitch 般跳動的數位肌理、
+                        <br>到霧中回響的潛意識廊道、
+                        <br>再到錯置時序的次元縫隙、
+                        <br>以及流動如倒影的自然幻景。
+                        <br>在這裡，風格不被定義，只被捕捉。
+                        <br>這是 day dreamin’ 的夢域，也是你的時尚坐標。 
+                    </p>
+                </div>
+
+                <div class="intro-img-col">
+                    <img src="https://i.pinimg.com/736x/53/8b/3a/538b3a5b4ce75a9224ced2cb0812f41a.jpg" alt="Intro Visual">
+                </div>
+            </div>
+        </section>
+
+        <section class="gallery-section" id="realm">
+            <div class="gallery-grid">
+                
+                <div class="gallery-item reveal-up link-hover" onclick="openChapter(1)">
+                    <div class="img-wrapper">
+                        <img src="https://i.pinimg.com/736x/54/99/ab/5499ab68bffd691eabb4973d12f76f13.jpg" alt="Fashion">
+                    </div>
+                    <div class="caption">
+                        <span>Chapter 01</span>
+                        <span class="explore-hint">Explore ↗</span>
+                        <span>Glitch Reality</span>
+                    </div>
+                </div>
+
+                <div class="gallery-item reveal-up link-hover" onclick="openChapter(2)">
+                    <div class="img-wrapper">
+                        <img src="https://i.pinimg.com/1200x/0b/a3/2e/0ba32e46ea2bfc62b93f4fa0eb5185e8.jpg" alt="Flower">
+                    </div>
+                    <div class="caption">
+                        <span>Chapter 02</span>
+                        <span class="explore-hint">Explore ↗</span>
+                        <span>Echoes in the Haze</span>
+                    </div>
+                </div>
+
+                <div class="gallery-item reveal-up link-hover" onclick="openChapter(3)">
+                    <div class="img-wrapper">
+                        <img src="https://romantic-fairytale.com/cdn/shop/files/20251107_113648.jpg?v=1762483133&width=2048" alt="Abstract">
+                    </div>
+                    <div class="caption">
+                        <span>Chapter 03</span>
+                        <span class="explore-hint">Explore ↗</span>
+                        <span>The Glitch in Time</span>  
+                    </div>
+                </div>
+
+                <div class="gallery-item reveal-up link-hover" onclick="openChapter(4)">
+                    <div class="img-wrapper">
+                        <img src="https://i.pinimg.com/736x/1e/e4/bb/1ee4bb8a8d4d313a653d21790d69c844.jpg" alt="Texture">
+                    </div>
+                    <div class="caption">
+                        <span>Chapter 04</span>
+                        <span class="explore-hint">Explore ↗</span>
+                        <span>Reflected Bloom</span>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <footer id="contact">
+            <p class="link-hover">王姿予 林佑恩 黃子瑄 林宣穎<br><br>Designed for the daydreamers.</p>
+        </footer>
+    </main>
+
+    <div id="chapter-overlay">
+        <div class="close-btn link-hover" onclick="closeChapter()">CLOSE</div>
+        
+        <div class="overlay-content">
+            <span class="chapter-num" id="ov-num">Chapter 01</span>
+            <h1 class="chapter-head serif-font" id="ov-title">Glitch Reality</h1>
+            <p class="chapter-body" id="ov-desc">
+                Description goes here...
+            </p>
+            <div class="back-link serif-font link-hover" onclick="closeChapter()">Return to Atlas</div>
+        </div>
+
+        <div class="overlay-image">
+            <img id="ov-img" src="" alt="Chapter Visual">
+        </div>
+    </div>
+
+    <script>
+        // 1. 選單開關邏輯
+        const menuContainer = document.querySelector('.menu-container');
+        const menuTrigger = document.querySelector('.menu-trigger');
+
+        menuTrigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            menuContainer.classList.toggle('active');
+        });
+
+        document.addEventListener('click', () => {
+            menuContainer.classList.remove('active');
+        });
+
+        // 2. 導覽跳轉功能
+        function navAction(target) {
+            if (typeof closeChapter === 'function') closeChapter();
+            menuContainer.classList.remove('active');
+
+            if (target === 'home') {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else if (target === 'realm') {
+                const realmSection = document.getElementById('realm');
+                if(realmSection) realmSection.scrollIntoView({ behavior: 'smooth' });
+            } else if (target === 'contact') {
+                const contactSection = document.getElementById('contact');
+                if(contactSection) contactSection.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        function scrollToTop() {
+            if (typeof closeChapter === 'function') closeChapter();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // --- 資料庫 ---
+        const chapterData = {
+            1: {
+                title: "Glitch Reality",
+                img: "https://i.pinimg.com/736x/54/99/ab/5499ab68bffd691eabb4973d12f76f13.jpg",
+                desc: "【數位織夢者：Glitch Reality】這個主題強調「數位失真」與「現實世界」的融合，展現一種科技感與混亂美的交織。"
+            },
+            2: {
+                title: "Echoes in the Haze",
+                img: "https://i.pinimg.com/1200x/0b/a3/2e/0ba32e46ea2bfc62b93f4fa0eb5185e8.jpg",
+                desc: "【夢境迴廊：Echoes in the Haze】這個主題探索潛意識、夢境與現實之間的模糊界線，營造一種詩意、空靈且帶有神秘感的氛圍。"
+            },
+            3: {
+                title: "The Glitch in Time",
+                img: "https://i.pinimg.com/1200x/6f/86/8f/6f868f2980124e970a6dd901acf709df.jpg",
+                desc: "【次元裂縫：The Glitch in Time】這個主題聚焦於「時間」與「空間」的錯亂，將不同年代的風格元素並置，或創造出超現實的景觀。"
+            },
+            4: {
+                title: "Reflected Bloom",
+                img: "https://i.pinimg.com/736x/1e/e4/bb/1ee4bb8a8d4d313a653d21790d69c844.jpg",
+                desc: "【鏡花水月：Reflected Bloom】這個主題結合了「百花綻放」的生機與「鏡像」的虛幻，透過花卉的反射、重疊與變形，營造出一個既真實又夢幻，既豐盛又帶有哲學詩意的世界。它探索自然之美在不同維度下的呈現，以及轉瞬即逝的瞬間美。"
+            }
+        };
+
+        // --- 核心互動邏輯 ---
+        const overlay = document.getElementById('chapter-overlay');
+        const ovNum = document.getElementById('ov-num');
+        const ovTitle = document.getElementById('ov-title');
+        const ovDesc = document.getElementById('ov-desc');
+        const ovImg = document.getElementById('ov-img');
+
+        function openChapter(id) {
+            const data = chapterData[id];
+            ovNum.textContent = `Chapter 0${id}`;
+            ovTitle.textContent = data.title;
+            ovDesc.innerHTML = data.desc;
+            ovImg.src = data.img;
+            overlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeChapter() {
+            overlay.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        // --- 游標與動畫邏輯 ---
+        const cursorDot = document.querySelector('.cursor-dot');
+        const cursorCircle = document.querySelector('.cursor-circle');
+
+        document.addEventListener('mousemove', (e) => {
+            cursorDot.style.left = `${e.clientX}px`;
+            cursorDot.style.top = `${e.clientY}px`;
+            cursorCircle.animate({ left: `${e.clientX}px`, top: `${e.clientY}px` }, { duration: 500, fill: "forwards" });
+        });
+
+        document.addEventListener('mouseover', (e) => {
+            if (e.target.closest('.link-hover')) {
+                document.body.classList.add('hovering');
+            }
+        });
+        document.addEventListener('mouseout', (e) => {
+            if (e.target.closest('.link-hover')) {
+                document.body.classList.remove('hovering');
+            }
+        });
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) entry.target.classList.add('visible');
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.reveal-up').forEach(el => observer.observe(el));
+    </script>
+</body>
+</html>
